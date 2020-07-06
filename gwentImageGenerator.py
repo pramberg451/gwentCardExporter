@@ -248,7 +248,7 @@ class GwentImageGenerator:
         numberOfCards = len(cardsToGenerate)
         cardsCompleted = 0
 
-        if not gwentPath or not gwentPath.endswith("GWENT The Witcher Card Game") or not gwentPath.endswith("Gwent"):
+        if not gwentPath or not (gwentPath.endswith("GWENT The Witcher Card Game") or gwentPath.endswith("Gwent")):
             messagebox.showerror("No Gwent Path", "Path to Gwent installation was invalid or not specified.")
             return
         if not imagePath:
@@ -401,7 +401,7 @@ class GwentImageGenerator:
         if filename == "":
             messagebox.showerror("No File Name", "No file name was specified.")
             return
-        if not gwentPath or not gwentPath.endswith("GWENT The Witcher Card Game") or not gwentPath.endswith("Gwent"):
+        if not gwentPath or not (gwentPath.endswith("GWENT The Witcher Card Game") or gwentPath.endswith("Gwent")):
             messagebox.showerror("No Gwent Path", "Path to Gwent installation was invalid or not specified.")
             return
         cards = {}
