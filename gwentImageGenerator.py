@@ -24,7 +24,7 @@ class GwentImageGenerator:
         gwentPathFrame = ttk.Frame(pathOptions)
         gwentPathInfoButton = ttk.Button(gwentPathFrame, text='?', width='3')
         gwentPathInfoButton.pack(side='left')
-        gwentPathInfoButton.configure(command= lambda: GwentImageGenerator.showPathSelectionInfo(self, "Specify the folder in which Gwent is installed, usually named 'GWENT The Witcher Card Game'.\n\nIf you have the game installed on Steam you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'\n\nIf you have the game installed on GOG you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'"))
+        gwentPathInfoButton.configure(command= lambda: GwentImageGenerator.showPathSelectionInfo(self, "Specify the folder in which Gwent is installed, usually named 'GWENT The Witcher Card Game' or 'Gwent'.\n\nIf you have the game installed on Steam you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'\n\nIf you have the game installed on GOG you can usually find it at:\n  'C:/Program Files (x86)/GOG Galaxy/Games/Gwent'"))
         gwentPathChooser = PathChooserInput(gwentPathFrame)
         gwentPathChooser.config(type='directory')
         gwentPathChooser.pack(fill='x', side='left', expand='true', padx='5')
@@ -248,7 +248,7 @@ class GwentImageGenerator:
         numberOfCards = len(cardsToGenerate)
         cardsCompleted = 0
 
-        if not gwentPath or not gwentPath.endswith("GWENT The Witcher Card Game"):
+        if not gwentPath or not gwentPath.endswith("GWENT The Witcher Card Game") or not gwentPath.endswith("Gwent"):
             messagebox.showerror("No Gwent Path", "Path to Gwent installation was invalid or not specified.")
             return
         if not imagePath:
@@ -401,7 +401,7 @@ class GwentImageGenerator:
         if filename == "":
             messagebox.showerror("No File Name", "No file name was specified.")
             return
-        if not gwentPath or not gwentPath.endswith("GWENT The Witcher Card Game"):
+        if not gwentPath or not gwentPath.endswith("GWENT The Witcher Card Game") or not gwentPath.endswith("Gwent"):
             messagebox.showerror("No Gwent Path", "Path to Gwent installation was invalid or not specified.")
             return
         cards = {}
