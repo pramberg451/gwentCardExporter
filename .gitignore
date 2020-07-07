@@ -1,6 +1,7 @@
 # Example Image
 exporter.png
 
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -130,3 +131,28 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+card_data/test.json
+data_definitions/Abilities.xml
+data_definitions/ArtDefinitions.xml
+data_definitions/ArtTemplates.xml
+data_definitions/Blackboards.xml
+data_definitions/CardAudio.xml
+data_definitions/Categories.xml
+data_definitions/Info
+data_definitions/Localization/de-de.csv
+data_definitions/Localization/en-us.csv
+data_definitions/Localization/es-es.csv
+data_definitions/Localization/es-mx.csv
+data_definitions/Localization/fr-fr.csv
+data_definitions/Localization/it-it.csv
+data_definitions/Localization/ja-jp.csv
+data_definitions/Localization/ko-kr.csv
+data_definitions/Localization/pl-pl.csv
+data_definitions/Localization/pt-br.csv
+data_definitions/Localization/ru-ru.csv
+data_definitions/Localization/zh-cn.csv
+data_definitions/Localization/zh-tw.csv
+data_definitions/Personalities.xml
+data_definitions/Summations.xml
+data_definitions/Templates.xml
+savedPaths.txt
