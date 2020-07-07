@@ -8,4 +8,4 @@ The code for GwentUtils and some the json generating is based on this repository
 
 Assets for card icons and borders can also be found in the 'assets' folder.
 
-![example-screenshot](https://github.com/pramberg451/imageStorage/blob/master/exporter.png)
+![example-screenshot](https://github.com/pramberg451/gwentCardImageExporter/blob/master/exporter.png)
