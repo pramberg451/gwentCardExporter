@@ -5,32 +5,27 @@ from UnityPy import AssetsManager
 import texture2ddecoder
 from PIL import Image
 import json
-import GwentUtils
 from os import listdir, mkdir
 from tkinter import messagebox
-import zipfile
 
-class GwentImageGenerator:
+class GwentCardImageExporter:
     def __init__(self, master=None):
-        # build ui
+        # Create main window and frame
         mainwindow = tk.Tk()
         mainFrame = ttk.Frame(mainwindow)
 
-        pathOptions = ttk.Labelframe(mainFrame)
-
         # Add Gwent Installation Path Chooser
-        gwentPathLabel = ttk.Label(pathOptions, text='Gwent Installation Path')
-        gwentPathLabel.pack(side='top')
-        gwentPathFrame = ttk.Frame(pathOptions)
+        gwentPathFrame = ttk.LabelFrame(mainFrame, text='1. Specify Gwent Installation Path', labelanchor='n')
         gwentPathInfoButton = ttk.Button(gwentPathFrame, text='?', width='3')
-        gwentPathInfoButton.pack(side='left')
-        gwentPathInfoButton.configure(command= lambda: GwentImageGenerator.showPathSelectionInfo(self, "Specify the folder in which Gwent is installed, usually named 'GWENT The Witcher Card Game' or 'Gwent'.\n\nIf you have the game installed on Steam you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'\n\nIf you have the game installed on GOG you can usually find it at:\n  'C:/Program Files (x86)/GOG Galaxy/Games/Gwent'"))
+        gwentPathInfoButton.pack(side='left', padx='5')
+        gwentPathInfoButton.configure(command= lambda: GwentCardImageExporter.showInfo(self, "Specify the folder in which Gwent is installed, usually named 'GWENT The Witcher Card Game' or 'Gwent'.\n\nIf you have the game installed on Steam you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'\n\nIf you have the game installed on GOG you can usually find it at:\n  'C:/Program Files (x86)/GOG Galaxy/Games/Gwent'"))
         gwentPathChooser = PathChooserInput(gwentPathFrame)
         gwentPathChooser.config(type='directory')
-        gwentPathChooser.pack(fill='x', side='left', expand='true', padx='5')
-        gwentPathFrame.pack(fill='x', side='top')
+        gwentPathChooser.pack(fill='x', side='left', expand='true', pady='5')
+        gwentPathFrame.pack(fill='x', pady='5', padx='5', side='top')
 
-        # Open path file and load saved gwent installation path
+        # Open path file and load saved Gwent installation path
+        # Create a file to save paths if one is not already made
         try:
             pathFile = open('savedPaths.txt', 'r')
         except:
@@ -39,37 +34,18 @@ class GwentImageGenerator:
             pathFile = open('savedPaths.txt', 'r')
         gwentPathChooser.configure(path=pathFile.readline().rstrip())
 
-        # Add Image Path Installation Chooser
-        imagePathLabel = ttk.Label(pathOptions, text='Image Destination Path')
-        imagePathLabel.pack(side='top')
-        imagePathFrame = ttk.Frame(pathOptions)
-        imagePathInfoButton = ttk.Button(imagePathFrame, text='?', width='3')
-        imagePathInfoButton.pack(side='left')
-        imagePathInfoButton.configure(command= lambda: GwentImageGenerator.showPathSelectionInfo(self, "Specifiy the folder where you want to save the generated images"))
-        imagePathChooser = PathChooserInput(imagePathFrame)
-        imagePathChooser.config(type='directory')
-        imagePathChooser.pack(fill='x', side='left', expand='true', padx='5')
-        imagePathFrame.pack(fill='x', side='top')
+        # Add Card Data File Selector and Export Button
+        cardDataFrame = ttk.Labelframe(mainFrame, text='2. Extract or update card data', labelanchor='n')
 
-        # Load saved image save path and close path file
-        imagePathChooser.configure(path=pathFile.readline().rstrip())
-        pathFile.close()
-
-        # Set up final pathOptions frame settings
-        pathOptions.config(height='200', labelanchor='n', padding='10', text='Path Options')
-        pathOptions.config(width='200')
-        pathOptions.pack(fill='both', side='top')
-
-        # Make jsonOptionsFrame
-        jsonOptions = ttk.Labelframe(mainFrame)
-
-        # label for combobox
-        currentJSONLabel = ttk.Label(jsonOptions, text='Card Data File:')
-        currentJSONLabel.pack(side='left', padx='8')
-
-        # Combobox for current json file being used
-        self.currentJSON = ttk.Combobox(jsonOptions)
+        # Add Card Data Info Button
+        cardDataInfoButton = ttk.Button(cardDataFrame, text='?', width='3')
+        cardDataInfoButton.pack(side='left', padx='5')
+        cardDataInfoButton.configure(command= lambda: GwentCardImageExporter.showInfo(self, "In order to generate card images you first need to extract the card data from the game files.\n\nTo do so click the 'Export Data' button and save the file as a .json.\n\nIt should appear in the menu here and should load the data into the card list below so you can\nchoose specific cards to generate.\n\nThese .json card data files can be found in the 'card_data' folder in the programs directory\nand can also be used for your own personal Gwent projects.\n\nRight now they only contain the data to generate images but the plan is to format all\nthe card data from the games files so this program can be used as a proper card data exporter as well."))
+        
+        # Add combobox to select a json file
+        self.currentJSON = ttk.Combobox(cardDataFrame)
         self.currentJSON.pack(side='left', fill='x', expand='true')
+
         # Try and list json files in 'card_data', create empty 'card_data' dir if none exists
         try:
             self.currentJSON['values'] = [x for x in listdir('card_data') if x.endswith(".json")]
@@ -77,61 +53,65 @@ class GwentImageGenerator:
             mkdir('card_data')
             self.currentJSON['values'] = [x for x in listdir('card_data') if x.endswith(".json")]
         
+        # When a new json is selected load it into the card list view
         self.currentJSON.bind('<<ComboboxSelected>>', self.loadNewJSON)
+        
+        # Save number of files and set selection to the newest (highest version number)
         self.numberofFiles = len(self.currentJSON['values'])
-        # Set defualt file to the highest version number (last in the directory)
         if self.numberofFiles != 0:
             self.currentJSON.current(self.numberofFiles - 1)
 
-        # Export new json button
-        newJSON = ttk.Button(jsonOptions)
-        newJSON.config(text='Update Data')
-        newJSON.pack(side='left', padx='8', pady='4')
-        newJSON.configure(command= lambda: GwentImageGenerator.updateJSON(self, gwentPathChooser.cget('path')))
+        # Add a button for exporting new card data
+        exportDataButton = ttk.Button(cardDataFrame)
+        exportDataButton.config(text='Export Data')
+        exportDataButton.pack(side='left', padx='5', pady='5')
+        exportDataButton.configure(command= lambda: GwentCardImageExporter.updateJSON(self, gwentPathChooser.cget('path')))
 
-        # configure jsonOptions frame
-        jsonOptions.config(labelanchor='n', text='JSON Options')
-        jsonOptions.pack(expand='true', fill='x', side='top')
+        cardDataFrame.pack(fill='x', pady='5', padx='5', side='top')
 
-        cardOptions = ttk.Labelframe(mainFrame)
+        # Add Card Options
+        cardOptionsFrame = ttk.Labelframe(mainFrame, text='3. Specify card options', labelanchor='n')
 
         # Add three checkboxes for image options
-        addBordersBox = ttk.Checkbutton(cardOptions)
+        addBordersBox = ttk.Checkbutton(cardOptionsFrame)
         self.addBorders = tk.BooleanVar()
         self.addBorders.set(True)
         addBordersBox.config(text='Add Borders', variable=self.addBorders)
-        addBordersBox.pack(anchor='nw', side='top')
+        addBordersBox.pack(anchor='nw', side='top', padx='5')
 
-        addStrengthIconsBox = ttk.Checkbutton(cardOptions)
+        addStrengthIconsBox = ttk.Checkbutton(cardOptionsFrame)
         self.addStrengthIcons = tk.BooleanVar()
         self.addStrengthIcons.set(True)
         addStrengthIconsBox.config(text='Add Strength/Icons', variable=self.addStrengthIcons)
-        addStrengthIconsBox.pack(anchor='nw', side='top')
+        addStrengthIconsBox.pack(anchor='nw', side='top', padx='5')
 
-        addProvisionsBox = ttk.Checkbutton(cardOptions)
+        addProvisionsBox = ttk.Checkbutton(cardOptionsFrame)
         self.addProvisions = tk.BooleanVar()
         self.addProvisions.set(True)
         addProvisionsBox.config(text='Add Provisions', variable=self.addProvisions)
-        addProvisionsBox.pack(anchor='nw', side='top')
+        addProvisionsBox.pack(anchor='nw', side='top', padx='5')
 
         # Add dividor
-        separator = ttk.Separator(cardOptions)
+        separator = ttk.Separator(cardOptionsFrame)
         separator.config(orient='horizontal')
-        separator.pack(fill='x', pady='5', side='top')
+        separator.pack(fill='x', pady='5', side='top', padx='5')
 
         # Add radio buttons for all or only specfic images
         self.allImages = tk.IntVar()
         self.allImages.set(1)
-        allImagesSelector = ttk.Radiobutton(cardOptions)
+
+        allImagesSelector = ttk.Radiobutton(cardOptionsFrame)
         allImagesSelector.config(text='All Images', variable=self.allImages, value=1)
-        allImagesSelector.pack(anchor='nw', side='top')
-        specificImagesSelector = ttk.Radiobutton(cardOptions)
+        allImagesSelector.pack(anchor='nw', side='top', padx='5')
+
+        specificImagesSelector = ttk.Radiobutton(cardOptionsFrame)
         specificImagesSelector.config(text='Specified Images', variable=self.allImages, value=0)
-        specificImagesSelector.pack(anchor='nw', side='top')
+        specificImagesSelector.pack(anchor='nw', side='top', padx='5')
 
-        cardListFrame = ttk.Frame(cardOptions)
+        # Add list of cards found in the card data file
+        cardListFrame = ttk.Frame(cardOptionsFrame)
 
-        # Set up treeview to display all cards in selected json file
+        # Set up treeview
         self.cardView = ttk.Treeview(cardListFrame, columns=('Name', 'ID'))
         self.cardView.config(selectmode='extended')
         self.cardView['show'] = 'headings'
@@ -143,42 +123,55 @@ class GwentImageGenerator:
         scrollBar = ttk.Scrollbar(cardListFrame, orient="vertical")
         scrollBar.configure(command = self.cardView.yview)
         self.cardView.config(yscrollcommand=scrollBar.set)
-        scrollBar.pack(side='left', fill='y')
+        scrollBar.pack(side='left', fill='both')
 
-        cardListFrame.pack(fill='both', side='top')
+        cardListFrame.pack(side='top', padx='5')
 
-        cardSearchFrame = ttk.Frame(cardOptions)
+        # Add a search box to the card list
+        cardSearchFrame = ttk.Frame(cardOptionsFrame)
 
         # label for search box
         searchLabel = ttk.Label(cardSearchFrame, text='Search:')
         searchLabel.pack(side='left')
-
         # add search box for card list
         self.detachedCards = []
         searchText = tk.StringVar()
-        searchText.trace('w', lambda name, index, mode, searchText=searchText: GwentImageGenerator.filterCardlist(self, searchText.get()))
+        searchText.trace('w', lambda name, index, mode, searchText=searchText: GwentCardImageExporter.filterCardlist(self, searchText.get()))
         self.searchBox = ttk.Entry(cardSearchFrame, textvariable=searchText)
         self.searchBox.pack(side='left', expand='true', fill='x')
 
-        cardSearchFrame.pack(fill='x', side='top', pady='8')
+        cardSearchFrame.pack(fill='x', side='top', pady='8', padx='5')
         
         # If one is selected load the json file into the card list
         if self.numberofFiles != 0:
-            GwentImageGenerator.loadNewJSON(self, None)
+            GwentCardImageExporter.loadNewJSON(self, None)
 
-        cardOptions.config(labelanchor='n', padding='10', text='Card Options')
-        cardOptions.pack(fill='both', side='top')
+        cardOptionsFrame.pack(fill='x', pady='5', padx='5', side='top')
+
+        # Add Image Path Installation Chooser
+        imagePathFrame = ttk.LabelFrame(mainFrame, text='4. Choose where to save', labelanchor='n')
+        imagePathInfoButton = ttk.Button(imagePathFrame, text='?', width='3')
+        imagePathInfoButton.pack(side='left', padx='5')
+        imagePathInfoButton.configure(command= lambda: GwentCardImageExporter.showInfo(self, "Specifiy the folder where you want to save the generated images"))
+        imagePathChooser = PathChooserInput(imagePathFrame)
+        imagePathChooser.config(type='directory')
+        imagePathChooser.pack(fill='x', side='left', expand='true', pady='5')
+        imagePathFrame.pack(fill='x', pady='5', padx='5', side='top')
+
+        # Load saved image save path and close path file
+        imagePathChooser.configure(path=pathFile.readline().rstrip())
+        pathFile.close()
 
         # Add a button to generate cards
         generateButton = ttk.Button(mainFrame)
         generateButton.config(text='Generate')
         generateButton.pack(side='top', pady='5')
-        generateButton.configure(command= lambda: GwentImageGenerator.generateCards(self, imagePathChooser.cget('path'), gwentPathChooser.cget('path')))
+        generateButton.configure(command= lambda: GwentCardImageExporter.generateCards(self, imagePathChooser.cget('path'), gwentPathChooser.cget('path')))
 
         # Set up final window
-        mainFrame.config(height='640', width='400')
+        mainFrame.config(height='650', width='400')
         mainFrame.pack(padx='3', pady='3', side='top')
-        mainwindow.geometry('450x640')
+        mainwindow.geometry('450x650')
         mainwindow.resizable(False, False)
         mainwindow.title('Gwent Card Image Exporter')
         mainwindow.iconbitmap('assets/favicon.ico')
@@ -191,10 +184,10 @@ class GwentImageGenerator:
         if self.cardView.selection() != empty:
             self.allImages.set(0)
     
-    # Dialog box to show info on which Gwent and Image paths to select
-    def showPathSelectionInfo(self, info):
+    # Dialog box to show info for (?) buttons
+    def showInfo(self, info):
         pathDialog = tk.Toplevel()
-        pathDialog.title("Gwent Path Info")
+        pathDialog.title("Info")
         dialogFrame = ttk.Frame(pathDialog)
         infoLabel = ttk.Label(dialogFrame, text=info)
         infoLabel.pack(padx='10', pady='5', side='top')
@@ -206,9 +199,12 @@ class GwentImageGenerator:
 
     # Loads a JSON file into the card list
     def loadNewJSON(self, event):
+        # Load json file specified in the combobox
         with open("card_data/" + self.currentJSON.get(), "r") as json_file:
             self.cardData = json.load(json_file)
+            # Clear all items previously listed
             self.cardView.delete(*self.cardView.get_children())
+            # If the card is not null or a Leader load it into the list
             for card in self.cardData:
                 if(self.cardData[card]['cardType'] is not None and self.cardData[card]['cardType'] != 'Leader' and self.cardData[card]['name']['en-US'] is not None):
                     self.cardView.insert('', 'end', text=self.cardData[card]['name']['en-US'], values=(self.cardData[card]['name']['en-US'],self.cardData[card]['ingameId']))
@@ -216,11 +212,14 @@ class GwentImageGenerator:
     # Searches card list, detaching a reattaching items
     def filterCardlist(self, searchText):
         cards = list(self.detachedCards) + list(self.cardView.get_children())
+        # Clear detached cards
         self.detachedCards = []
         for card in cards:
             name = self.cardView.item(card, 'text')
+            # If name does match move it into place on the list
             if searchText.lower() in name.lower():
                 self.cardView.reattach(card, '', int(card[1:], 16) - 1)
+            # IF names doesn't match detach and save it in detached cards
             else:
                 self.detachedCards.append(card)
                 self.cardView.detach(card)
@@ -248,6 +247,7 @@ class GwentImageGenerator:
         numberOfCards = len(cardsToGenerate)
         cardsCompleted = 0
 
+        # Raise and error if gwent path, save path, or json file are not valid and if no cards were slected
         if not gwentPath or not (gwentPath.endswith("GWENT The Witcher Card Game") or gwentPath.endswith("Gwent")):
             messagebox.showerror("No Gwent Path", "Path to Gwent installation was invalid or not specified.")
             return
@@ -261,34 +261,48 @@ class GwentImageGenerator:
             messagebox.showerror("No Card Selected", "No cards were selected.")
             return
 
-        labelString = tk.StringVar()
-        labelString.set(str(cardsCompleted) + " of " + str(numberOfCards) + " completed")
+        # Launch progress bar window
         progressWindow = tk.Toplevel()
         progressWindow.title("Generating...")
-        progressFrame = ttk.Frame(progressWindow)
-        progressLabel = ttk.Label(progressFrame, textvariable = labelString)
+
+        jsonFrame = ttk.Frame(progressWindow)
+
+        # Add a label to show how many cards have been completed
+        progressString = tk.StringVar()
+        progressString.set(" ".join([str(cardsCompleted), "of", str(numberOfCards), "completed"]))
+        progressLabel = ttk.Label(jsonFrame, textvariable = progressString)
         progressLabel.pack(padx='10', pady='5', side='top')
-        progressBar = ttk.Progressbar(progressFrame)
+
+        # Add a progress bar
+        progressBar = ttk.Progressbar(jsonFrame)
         progressBar.config(orient='horizontal', maximum=numberOfCards, length=250, mode='determinate')
         progressBar.pack(padx='10', pady='5', side='top')
+        
+        # Add a cancel button to quit early
         running = tk.BooleanVar()
         running.set(True)
-        cancelButton = ttk.Button(progressFrame, text='Cancel', command = lambda: running.set(False))
+        cancelButton = ttk.Button(jsonFrame, text='Cancel', command = lambda: running.set(False))
         cancelButton.pack(pady='5', side='top')
-        progressFrame.config(height='250', width='200')
-        progressFrame.pack(side='top')
+
+        jsonFrame.config(height='250', width='200')
+        jsonFrame.pack(side='top')
+
         progressWindow.config(height='250', width='200')
         progressWindow.iconbitmap('assets/favicon.ico')
         progressWindow.resizable(False, False)
         progressWindow.update()
-        # For each card in the file
+
         for card in cardsToGenerate:
+
+            # Exit if cancel was pressed
             if not running.get():
                 break
-            # if the card is collectible and not a leader
+
+            # if the card is valid and not a leader
             if self.cardData[card]['type'] != 'Leader' and self.cardData[card]['type'] is not None and self.cardData[card]['name']['en-US'] is not None:
-                # load and crop the card art
-                am = AssetsManager(gwentPath + "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/high/" + self.cardData[card]['ingameArtId']  + "0000")
+
+                # Export and crop the card art
+                am = AssetsManager("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/high/", self.cardData[card]['ingameArtId'], "0000"]))
                 for asset in am.assets.values():
                     for obj in asset.objects.values():
                         if obj.type == "Texture2D":
@@ -296,74 +310,81 @@ class GwentImageGenerator:
                             img = data.image
                 newImg = img.crop((0,0,496,712))
 
-                # add gold or bronze border based on type
+                # Add gold or bronze border based on type (border tier not card type)
                 if self.addBorders.get():
-                    asset = Image.open("assets/" + self.cardData[card]['type'] + ".png")
+                    asset = Image.open("".join(["assets/", self.cardData[card]['type'], ".png"]))
                     newImg = Image.alpha_composite(newImg, asset)
 
-                # retrieve card type
+                # Retrieve card type
                 cardType = self.cardData[card]['cardType']
 
+                # If the optons said to add strength or type icons
                 if self.addStrengthIcons.get():
-                    # add icon diamond based on faction
-                    asset = Image.open("assets/" + self.cardData[card]['faction'] + "_diamond.png")
+                    # Add icon diamond based on faction
+                    asset = Image.open("".join(["assets/", self.cardData[card]['faction'], "_diamond.png"]))
                     newImg = Image.alpha_composite(newImg, asset)
 
-                    # add rarity icon based on rarity
-                    asset = Image.open("assets/" + self.cardData[card]['rarity'] + ".png")
+                    # Add rarity icon based on rarity
+                    asset = Image.open("".join(["assets/", self.cardData[card]['rarity'], ".png"]))
                     newImg = Image.alpha_composite(newImg, asset)
 
-                    # if the card is a strategem add the banner icon (no provisions needed)
+                    # If the card is a strategem add the banner icon (no provisions needed)
                     if cardType == 'Strategem':
                         asset = Image.open("assets/Strategem.png")
                         newImg = Image.alpha_composite(newImg, asset)
-                    # if the card is a unit add strength and potentially armor
+
+                    # If the card is a unit add strength and potentially armor
                     elif cardType == 'Unit':
                         # Check strength and add the corresponding number to the card
                         cardStrength = self.cardData[card]['strength']
                         if cardStrength > MAX_CARD_STRENGTH:
                             cardStrength = 0
-                        asset = Image.open("assets/s_" + str(cardStrength) + ".png")
+                        asset = Image.open("".join(["assets/s_", str(cardStrength), ".png"]))
                         newImg = Image.alpha_composite(newImg, asset)
 
-                        # Check if the card has armor and if so ass the corresponding symbol and number
+                        # Check if the card has armor and if so add the corresponding symbol and number
                         cardArmor = self.cardData[card]['armor']
                         if cardArmor <= MAX_CARD_ARMOR and cardArmor > 0:
                             asset = Image.open("assets/armor.png")
                             newImg = Image.alpha_composite(newImg, asset)
-                            asset = Image.open("assets/a_" + str(cardArmor) + ".png")
+                            asset = Image.open("".join(["assets/a_", str(cardArmor), ".png"]))
                             newImg = Image.alpha_composite(newImg, asset)
-                    # if the card is a special (no strength or armor needed)
+
+                    # If the card is a special add the flame icon
                     elif cardType == 'Spell':
                         # place flame icon
                         asset = Image.open("assets/Special.png")
                         newImg = Image.alpha_composite(newImg, asset)
-                    # if the card is an artifact (no strength or armor needed)
+
+                    # If the card is an artifact add the goblet icon
                     elif cardType == 'Artifact':
                         # place goblet icon
                         asset = Image.open("assets/Artifact.png")
                         newImg = Image.alpha_composite(newImg, asset)
-                
+
+                # If not a strategem and we are adding provisons
                 if self.addProvisions.get() and not cardType == 'Strategem':
-                    # add provisons icon
+                    # Add provisons icon
                     asset = Image.open("assets/provisions.png")
                     newImg = Image.alpha_composite(newImg, asset)
 
-                    # add provisions square background based on the faction
-                    asset = Image.open("assets/" + self.cardData[card]['faction'] + "_prov.png")
+                    # Add provisions square background based on the faction
+                    asset = Image.open("".join(["assets/", self.cardData[card]['faction'], "_prov.png"]))
                     newImg = Image.alpha_composite(newImg, asset)
 
-                    # check the provisions number and add the corresponding number
+                    # Check the provisions number and add the corresponding number
                     cardProvisions = self.cardData[card]['provision']
                     if cardProvisions > MAX_CARD_PROVISIONS:
                         cardProvisions == 0
-                    asset = Image.open("assets/p_" + str(cardProvisions) + ".png")
+                    asset = Image.open("".join(["assets/p_", str(cardProvisions), ".png"]))
                     newImg = Image.alpha_composite(newImg, asset)
                 
-                # save the card using the card's id number
-                newImg.save(imagePath + "/" + self.cardData[card]['ingameId'] + ".png")
+                # Save the card using the card's name and id number
+                newImg.save("".join([imagePath, "/", self.cardData[card]['name']['en-US'].replace(':', ''), "_", self.cardData[card]['ingameId'], ".png"]))
+            
+            # Update progress label and progress bar
             cardsCompleted += 1
-            labelString.set(str(cardsCompleted) + " of " + str(numberOfCards) + " completed")
+            progressString.set(" ".join([str(cardsCompleted), "of", str(numberOfCards), "completed"]))
             progressBar.step(1)
             progressWindow.update()
         
@@ -373,73 +394,103 @@ class GwentImageGenerator:
     def updateJSON(self, gwentPath):
         jsonWindow = tk.Toplevel()
         jsonWindow.title("Export new card data...")
-        entryFrame = ttk.Frame(jsonWindow)
+
+        jsonFrame = ttk.Frame(jsonWindow)
+
+        # Add help labels for naming the file
+        conventionLabel1 = ttk.Label(jsonFrame, text="Saving as an already generated file will overwrite the current one.")
+        conventionLabel1.pack()
+        conventionLabel2 = ttk.Label(jsonFrame, text="Game version is a good way to keep track of different data versions.")
+        conventionLabel2.pack()
+        conventionLabel3 = ttk.Label(jsonFrame, text="Example: 'cards-v7-0-2.json'")
+        conventionLabel3.pack()
+
+        # Add filename entry box, button and label
+        entryFrame = ttk.Frame(jsonFrame)
         filenameLabel = ttk.Label(entryFrame, text = "Save as:")
         filenameLabel.pack(padx='10', pady='5', side='left')
         filenameEntry = ttk.Entry(entryFrame)
         filenameEntry.pack(side='left', expand='true', fill='x')
-        generateJSONbutton = ttk.Button(entryFrame, text="Generate", command= lambda: GwentImageGenerator.generateCardData(self, filenameEntry.get(), progressBar, jsonWindow, gwentPath))
+        generateJSONbutton = ttk.Button(entryFrame, text="Generate", command= lambda: GwentCardImageExporter.generateCardData(self, filenameEntry.get(), progressBar, jsonWindow, gwentPath))
         generateJSONbutton.pack(side='left', padx='4')
-        progressFrame = ttk.Frame(jsonWindow)
-        conventionLabel1 = ttk.Label(progressFrame, text=" - Game version is a good way to keep track of different data versions", justify='left')
-        conventionLabel1.pack()
-        conventionLabel2 = ttk.Label(progressFrame, text=" - If you save as an already existing filename then the old one will be overwritten", justify='left')
-        conventionLabel2.pack()
-        conventionLabel3 = ttk.Label(progressFrame, text=" - Must be saved as a .json file", justify='left')
-        conventionLabel3.pack()
-        progressBar = ttk.Progressbar(progressFrame)
+        entryFrame.pack(side='top', padx='5', pady='5')
+
+        # Add progress bar
+        progressBar = ttk.Progressbar(jsonFrame)
         progressBar.config(orient='horizontal', length='400', mode='determinate')
         progressBar.pack(padx='10', pady='5', side='bottom')
-        entryFrame.pack(side='top', padx='5', pady='5')
-        progressFrame.pack(side='top')
+
+        jsonFrame.pack(side='top', pady='5', padx='5')
+
         jsonWindow.config(height='250', width='200')
         jsonWindow.resizable(False, False)
         jsonWindow.iconbitmap('assets/favicon.ico')
 
     # Generate the card data json file
     def generateCardData(self, filename, progressBar, jsonWindow, gwentPath):
-        if filename == "":
-            messagebox.showerror("No File Name", "No file name was specified.")
+        # Raise an error if filename is not valid
+        if not filename or not filename.endswith(".json"):
+            messagebox.showerror("No File Name", "File name was not specified or is not a .json")
             return
+        # Raise an error if Gwent path is not specified or invalid
         if not gwentPath or not (gwentPath.endswith("GWENT The Witcher Card Game") or gwentPath.endswith("Gwent")):
             messagebox.showerror("No Gwent Path", "Path to Gwent installation was invalid or not specified.")
             return
+
         cards = {}
         
+        # Show progress in the bar for feedback
         progressBar.config(maximum=30)
-
         progressBar.step(5)
         jsonWindow.update_idletasks()
 
+        # Unzip the data_definitions folder to get xml files
+        import zipfile
         with zipfile.ZipFile(gwentPath + "/Gwent_Data/StreamingAssets/data_definitions", 'r') as cardDefinitions:
             cardDefinitions.extractall("data_definitions/")
 
         progressBar.step(5)
         jsonWindow.update_idletasks()
-
+        
+        # Get the card info from the xml file
+        import GwentUtils
         gwentDataHelper = GwentUtils.GwentDataHelper("data_definitions/")
         card_templates = gwentDataHelper.card_templates
+
         progressBar.config(maximum=len(card_templates) + 30)
 
+        # Add each card as a json entry
         for template_id in card_templates:
             template = card_templates[template_id]
             card = {}
+
+            # ID
             card_id = template.attrib['Id']
+            
+            # In game ID
             card['ingameId'] = card_id
+            
+            # Strength
             card['strength'] = int(template.find('Power').text)
+
+            # Tier
             tier = int(template.find('Tier').text)
             card['type'] = GwentUtils.TIERS.get(tier)
+
+            # Type
             card_type = int(template.find('Type').text)
             card['cardType'] = GwentUtils.TYPES.get(card_type)
+
+            # Faction and Secondary Faction
             card['faction'] = GwentUtils.FACTIONS.get(int(template.find('FactionId').text))
             secondaryFaction = template.find('SecondaryFactionId')
             if secondaryFaction != None and int(secondaryFaction.text) in GwentUtils.FACTIONS:
                 card['secondaryFaction'] = GwentUtils.FACTIONS.get(int(secondaryFaction.text))
+
+            # Provisions
             card['provision'] = int(template.find('Provision').text)
             
-            #if (tier == LEADER):
-                #card['provisionBoost'] = int(template.find('Provision').text)
-
+            # Card Name
             card['name'] = {}
             card['flavor'] = {}
             for region in GwentUtils.LOCALES:
@@ -488,22 +539,25 @@ class GwentImageGenerator:
                     card['categories'].append(categories_en_us[category_id])
 
 
-
+            # Rarity
             rarity = int(template.find('Rarity').text)
             card['rarity'] = GwentUtils.RARITIES.get(rarity)
-
+            
+            # Art ID
             art_id = template.attrib.get('ArtId')
             if art_id != None:
                 card['ingameArtId'] = art_id
 
+            # Artist
             artist = gwentDataHelper.artists.get(art_id)
             if artist != None:
                 card['artist'] = artist
 
-            # Add all token cards to the 'related' list.
+            # Related Tokens
             tokens = gwentDataHelper.tokens.get(card_id)
             card['related'] = tokens
-
+            
+            # Armor
             armor = gwentDataHelper.armor.get(card_id)
             if armor != None and GwentUtils.TYPES.get(card_type) == "Unit":
                 card['armor'] = int(armor)
@@ -512,17 +566,20 @@ class GwentImageGenerator:
             progressBar.step(1)
             jsonWindow.update_idletasks()
 
+        # Save the json file
         GwentUtils.save_json("card_data/" + filename, cards)
+
+        # If the file is new, add it to the file list in the combobox, select it and load it
         if filename not in self.currentJSON['values']:
             self.currentJSON['values'] = (*self.currentJSON['values'], filename)
             self.numberofFiles += 1
         self.currentJSON.current(len(self.currentJSON['values']) - 1)
-        GwentImageGenerator.loadNewJSON(self, "<<ComboboxSelected>>")
+        GwentCardImageExporter.loadNewJSON(self, "<<ComboboxSelected>>")
         jsonWindow.destroy()
 
     def run(self):
         self.mainwindow.mainloop()
 
 if __name__ == '__main__':
-    app = GwentImageGenerator()
+    app = GwentCardImageExporter()
     app.run()
