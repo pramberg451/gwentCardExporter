@@ -6,5 +6,6 @@ The Gwent Card Image Exporter is an application written in Python using Tkinter.
 
 The code for GwentUtils and some the json generating is based on this repository: https://github.com/GwentCommunityDevelopers/gwent-data
 
+Assets for card icons and borders can also be found in the 'assets' folder.
 
 ![example-screenshot](https://github.com/pramberg451/imageStorage/blob/master/exporter.png)
