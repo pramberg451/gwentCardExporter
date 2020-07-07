@@ -1,4 +1,4 @@
-# Gwent Card Image Generator
+# Gwent Card Image Exporter
  A Card Image Exporter and Generator for Gwent : The Witcher Card Game
 
 More Info Coming Soon
