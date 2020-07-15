@@ -6,6 +6,7 @@ import texture2ddecoder
 from PIL import Image
 import json
 from os import listdir, mkdir
+from os.path import isfile
 from tkinter import messagebox
 
 class GwentCardImageExporter:
@@ -92,9 +93,29 @@ class GwentCardImageExporter:
         addProvisionsBox.pack(anchor='nw', side='top', padx='5')
 
         # Add dividor
-        separator = ttk.Separator(cardOptionsFrame)
-        separator.config(orient='horizontal')
-        separator.pack(fill='x', pady='5', side='top', padx='5')
+        separator1 = ttk.Separator(cardOptionsFrame)
+        separator1.config(orient='horizontal')
+        separator1.pack(fill='x', pady='5', side='top', padx='5')
+
+        # Add Card Data File Selector and Export Button
+        cardQualityFrame = ttk.Frame(cardOptionsFrame)
+
+        # Add a label for choosing image quality
+        qualityLabel = ttk.Label(cardQualityFrame, text='Image Quality:')
+        qualityLabel.pack(side='left')
+
+        # Add combobox to select a json file
+        self.imageQuality = ttk.Combobox(cardQualityFrame)
+        self.imageQuality.pack(side='left', fill='x', expand='true')
+        self.imageQuality['values'] = ['Low','Medium', 'High', 'Uber (4K)']
+        self.imageQuality.current(2)
+
+        cardQualityFrame.pack(fill='x', pady='5', padx='5', side='top')
+        
+        # Add dividor
+        separator2 = ttk.Separator(cardOptionsFrame)
+        separator2.config(orient='horizontal')
+        separator2.pack(fill='x', pady='5', side='top', padx='5')
 
         # Add radio buttons for all or only specfic images
         self.allImages = tk.IntVar()
@@ -169,9 +190,9 @@ class GwentCardImageExporter:
         generateButton.configure(command= lambda: GwentCardImageExporter.generateCards(self, imagePathChooser.cget('path'), gwentPathChooser.cget('path')))
 
         # Set up final window
-        mainFrame.config(height='650', width='400')
+        mainFrame.config(height='690', width='400')
         mainFrame.pack(padx='3', pady='3', side='top')
-        mainwindow.geometry('450x650')
+        mainwindow.geometry('450x690')
         mainwindow.resizable(False, False)
         mainwindow.title('Gwent Card Image Exporter')
         mainwindow.iconbitmap('assets/favicon.ico')
@@ -226,10 +247,9 @@ class GwentCardImageExporter:
 
     # Generate card images
     def generateCards(self, imagePath, gwentPath):
-        # Maximum values so a correct file is always chosen
-        MAX_CARD_STRENGTH = 13
-        MAX_CARD_ARMOR = 10
-        MAX_CARD_PROVISIONS = 14
+        MAX_CARD_STRENGTH = 99
+        MAX_CARD_PROVISIONS = 99
+        MAX_CARD_ARMOR = 99
 
         # Save chosen paths to a file
         with open('savedPaths.txt', 'w') as pathFile:
@@ -260,7 +280,11 @@ class GwentCardImageExporter:
         if not numberOfCards and not self.allImages.get():
             messagebox.showerror("No Card Selected", "No cards were selected.")
             return
-
+        # Check to see if you have 4K graphics installed
+        if (self.imageQuality.get() == "Uber (4K)") and not isfile("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/uber/10000000"])):
+            messagebox.showerror("Uber Graphics Not Installed", "You do not have the 4K graphics for Gwent installed.")
+            return
+        
         # Launch progress bar window
         progressWindow = tk.Toplevel()
         progressWindow.title("Generating...")
@@ -292,27 +316,54 @@ class GwentCardImageExporter:
         progressWindow.resizable(False, False)
         progressWindow.update()
 
-        for card in cardsToGenerate:
+        # Set the dimensions of the final cards based on quality
+        dimensions = (992, 1424)
+        quality = "uber"
+        if (self.imageQuality.get() == "High"):
+            dimensions = (497, 713)
+            quality = "high"
+        elif (self.imageQuality.get() == "Medium"):
+            dimensions = (249, 357)
+            quality = "medium"
+        elif (self.imageQuality.get() == "Low"):
+            dimensions = (125, 179)
+            quality = "low"
 
+        for card in cardsToGenerate:
             # Exit if cancel was pressed
             if not running.get():
                 break
 
             # if the card is valid and not a leader
             if self.cardData[card]['type'] != 'Leader' and self.cardData[card]['type'] is not None and self.cardData[card]['name']['en-US'] is not None:
-
+                # If the image is low quality, then export and crop it as a medium instead
+                # because the low resolution card arts are stored differently in the game files the higher qualities
+                if self.imageQuality.get() == "Low":
+                    dimensions = (249, 357)
+                    quality = "medium"
+                
                 # Export and crop the card art
-                am = AssetsManager("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/high/", self.cardData[card]['ingameArtId'], "0000"]))
+
+                am = AssetsManager("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/", quality, "/", self.cardData[card]['ingameArtId'], "0000"]))
                 for asset in am.assets.values():
                     for obj in asset.objects.values():
                         if obj.type == "Texture2D":
                             data = obj.read()
                             img = data.image
-                newImg = img.crop((0,0,496,712))
+                
+                newImg = img.crop((0,0,dimensions[0],dimensions[1]))
+                
+                # Reset the quality specifics back to low if it is low and was exported as a medium
+                if self.imageQuality.get() == "Low":
+                    dimensions = (125, 179)
+                    quality = "low"
+                    newImg = newImg.resize(dimensions)
 
                 # Add gold or bronze border based on type (border tier not card type)
                 if self.addBorders.get():
                     asset = Image.open("".join(["assets/", self.cardData[card]['type'], ".png"]))
+                    if (quality != "uber"):
+                        asset = asset.resize(dimensions)
                     newImg = Image.alpha_composite(newImg, asset)
 
                 # Retrieve card type
@@ -320,67 +371,76 @@ class GwentCardImageExporter:
 
                 # If the optons said to add strength or type icons
                 if self.addStrengthIcons.get():
-                    # Add icon diamond based on faction
-                    asset = Image.open("".join(["assets/", self.cardData[card]['faction'], "_diamond.png"]))
-                    newImg = Image.alpha_composite(newImg, asset)
-
-                    # Add rarity icon based on rarity
-                    asset = Image.open("".join(["assets/", self.cardData[card]['rarity'], ".png"]))
-                    newImg = Image.alpha_composite(newImg, asset)
-
-                    # If the card is a strategem add the banner icon (no provisions needed)
-                    if cardType == 'Strategem':
-                        asset = Image.open("assets/Strategem.png")
-                        newImg = Image.alpha_composite(newImg, asset)
-
+                    # Get icon diamond based on faction
+                    diamond = Image.open("".join(["assets/", self.cardData[card]['faction'], "_diamond.png"]))
+                    # Get rarity icon based on rarity
+                    rarity = Image.open("".join(["assets/", self.cardData[card]['rarity'], ".png"]))
+                    # Combine the two together
+                    strengthIcons = Image.alpha_composite(diamond, rarity)
+                    
                     # If the card is a unit add strength and potentially armor
-                    elif cardType == 'Unit':
+                    if cardType == 'Unit':
                         # Check strength and add the corresponding number to the card
                         cardStrength = self.cardData[card]['strength']
                         if cardStrength > MAX_CARD_STRENGTH:
-                            cardStrength = 0
-                        asset = Image.open("".join(["assets/s_", str(cardStrength), ".png"]))
-                        newImg = Image.alpha_composite(newImg, asset)
+                            cardStrength = MAX_CARD_STRENGTH
+                        strengthIcons = GwentCardImageExporter.placeNumber(self, cardStrength, "strength", strengthIcons)
 
                         # Check if the card has armor and if so add the corresponding symbol and number
                         cardArmor = self.cardData[card]['armor']
-                        if cardArmor <= MAX_CARD_ARMOR and cardArmor > 0:
-                            asset = Image.open("assets/armor.png")
-                            newImg = Image.alpha_composite(newImg, asset)
-                            asset = Image.open("".join(["assets/a_", str(cardArmor), ".png"]))
-                            newImg = Image.alpha_composite(newImg, asset)
+                        if cardArmor > MAX_CARD_ARMOR:
+                            cardArmor = MAX_CARD_ARMOR
+                        if cardArmor > 0:
+                            armor = Image.open("assets/Armor.png")
+                            strengthIcons = Image.alpha_composite(strengthIcons, armor)
+                            strengthIcons = GwentCardImageExporter.placeNumber(self, cardArmor, "armor", strengthIcons)
+                    
+                    # If the card is a strategem add the banner icon
+                    elif cardType == 'Strategem':
+                        strategem = Image.open("assets/Strategem.png")
+                        strengthIcons = Image.alpha_composite(strengthIcons, strategem)
 
                     # If the card is a special add the flame icon
                     elif cardType == 'Spell':
-                        # place flame icon
-                        asset = Image.open("assets/Special.png")
-                        newImg = Image.alpha_composite(newImg, asset)
+                        special = Image.open("assets/Special.png")
+                        strengthIcons = Image.alpha_composite(strengthIcons, special)
 
                     # If the card is an artifact add the goblet icon
                     elif cardType == 'Artifact':
-                        # place goblet icon
-                        asset = Image.open("assets/Artifact.png")
-                        newImg = Image.alpha_composite(newImg, asset)
+                        artifact = Image.open("assets/Artifact.png")
+                        strengthIcons = Image.alpha_composite(strengthIcons, artifact)
+                    
+                    # Downsize if not generating 4K qualty
+                    if (quality != "uber"):
+                        strengthIcons = strengthIcons.resize(dimensions)
+                    
+                    # Add the final composite to the image
+                    newImg = Image.alpha_composite(newImg, strengthIcons)
 
                 # If not a strategem and we are adding provisons
                 if self.addProvisions.get() and not cardType == 'Strategem':
-                    # Add provisons icon
-                    asset = Image.open("assets/provisions.png")
-                    newImg = Image.alpha_composite(newImg, asset)
-
-                    # Add provisions square background based on the faction
-                    asset = Image.open("".join(["assets/", self.cardData[card]['faction'], "_prov.png"]))
-                    newImg = Image.alpha_composite(newImg, asset)
+                    # Get provisons icon
+                    provisionIcon = Image.open("assets/Provisions.png")
+                    # Get provisions square background based on the faction
+                    provisionSquare = Image.open("".join(["assets/", self.cardData[card]['faction'], "_prov.png"]))
+                    # Combine the two together
+                    provisions = Image.alpha_composite(provisionIcon, provisionSquare)
 
                     # Check the provisions number and add the corresponding number
                     cardProvisions = self.cardData[card]['provision']
                     if cardProvisions > MAX_CARD_PROVISIONS:
-                        cardProvisions == 0
-                    asset = Image.open("".join(["assets/p_", str(cardProvisions), ".png"]))
-                    newImg = Image.alpha_composite(newImg, asset)
+                        cardProvisions == MAX_CARD_ARMOR
+                    provisions = GwentCardImageExporter.placeNumber(self, cardProvisions, "provisions", provisions)
+
+                    # Downsize if not generating in 4K quality
+                    if (quality != "uber"):
+                        provisions = provisions.resize(dimensions)
+                    
+                    # Add the final composite to the image
+                    newImg = Image.alpha_composite(newImg, provisions)
                 
                 # Save the card using the card's name and id number
-                newImg.save("".join([imagePath, "/", self.cardData[card]['name']['en-US'].replace(':', ''), "_", self.cardData[card]['ingameId'], ".png"]))
+                newImg.save("".join([imagePath, "/", self.cardData[card]['name']['en-US'].replace(':', ''), "_", self.cardData[card]['ingameId'], "_", quality, ".png"]))
             
             # Update progress label and progress bar
             cardsCompleted += 1
@@ -389,6 +449,42 @@ class GwentCardImageExporter:
             progressWindow.update()
         
         progressWindow.destroy()
+
+    # Add a number to the card image
+    def placeNumber(self, value, type, image):
+        # Set a default offset to account for centering single digits
+        offset = 5
+
+        # Set up base coordinates for placing numbers based on type
+        # Save either s or p for use in filename later
+        if type == "strength":
+            x = 90
+            y = 65
+            numberType = "s"
+        elif type == "provisions":
+            x = 800
+            y = 1185
+            numberType = "p"
+            offset += 5
+        elif type == "armor":
+            x = 800
+            y = 65
+            numberType = "s"
+
+        # If two digits place the tens digit offset to the left
+        if value > 9:
+            offset = 40
+            tensAsset = Image.open("".join(["assets/", numberType, str(value // 10), ".png"]))
+            # Increase the offset again if one of the digits is not 1
+            if value > 19 and value % 10 != 1:
+                offset += 10
+            image.paste(tensAsset, (x - offset, y), tensAsset)
+        
+        # Add the ones digit and offset to the right
+        onesAsset = Image.open("".join(["assets/", numberType, str(value % 10), ".png"]))
+        image.paste(onesAsset, (x + offset, y), onesAsset)
+
+        return image
 
     # Window for updating the card data files
     def updateJSON(self, gwentPath):
