@@ -9,7 +9,7 @@ from os import listdir, mkdir
 from os.path import isfile
 from tkinter import messagebox
 
-class GwentCardImageExporter:
+class GwentCardExporter:
     def __init__(self, master=None):
         # Create main window and frame
         mainwindow = tk.Tk()
@@ -19,7 +19,7 @@ class GwentCardImageExporter:
         gwentPathFrame = ttk.LabelFrame(mainFrame, text='1. Specify Gwent Installation Path', labelanchor='n')
         gwentPathInfoButton = ttk.Button(gwentPathFrame, text='?', width='3')
         gwentPathInfoButton.pack(side='left', padx='5')
-        gwentPathInfoButton.configure(command= lambda: GwentCardImageExporter.showInfo(self, "Specify the folder in which Gwent is installed, usually named 'GWENT The Witcher Card Game' or 'Gwent'.\n\nIf you have the game installed on Steam you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'\n\nIf you have the game installed on GOG you can usually find it at:\n  'C:/Program Files (x86)/GOG Galaxy/Games/Gwent'"))
+        gwentPathInfoButton.configure(command= lambda: GwentCardExporter.showInfo(self, "Specify the folder in which Gwent is installed, usually named 'GWENT The Witcher Card Game' or 'Gwent'.\n\nIf you have the game installed on Steam you can usually find it at:\n  'C:/Program Files (x86)/Steam/steamapps/common/GWENT The Witcher Card Game'\n\nIf you have the game installed on GOG you can usually find it at:\n  'C:/Program Files (x86)/GOG Galaxy/Games/Gwent'"))
         gwentPathChooser = PathChooserInput(gwentPathFrame)
         gwentPathChooser.config(type='directory')
         gwentPathChooser.pack(fill='x', side='left', expand='true', pady='5')
@@ -41,7 +41,7 @@ class GwentCardImageExporter:
         # Add Card Data Info Button
         cardDataInfoButton = ttk.Button(cardDataFrame, text='?', width='3')
         cardDataInfoButton.pack(side='left', padx='5')
-        cardDataInfoButton.configure(command= lambda: GwentCardImageExporter.showInfo(self, "In order to generate card images you first need to extract the card data from the game files.\n\nTo do so click the 'Export Data' button and save the file as a .json.\n\nIt should appear in the menu here and should load the data into the card list below so you can\nchoose specific cards to generate.\n\nThese .json card data files can be found in the 'card_data' folder in the programs directory\nand can also be used for your own personal Gwent projects.\n\nRight now they only contain the data to generate images but the plan is to format all\nthe card data from the games files so this program can be used as a proper card data exporter as well."))
+        cardDataInfoButton.configure(command= lambda: GwentCardExporter.showInfo(self, "In order to generate card images you first need to extract the card data from the game files.\n\nTo do so click the 'Export Data' button and save the file as a .json.\n\nIt should appear in the menu here and should load the data into the card list below so you can\nchoose specific cards to generate.\n\nThese .json card data files can be found in the 'card_data' folder in the programs directory\nand can also be used for your own personal Gwent projects.\n\nRight now they only contain the data to generate images but the plan is to format all\nthe card data from the games files so this program can be used as a proper card data exporter as well."))
         
         # Add combobox to select a json file
         self.currentJSON = ttk.Combobox(cardDataFrame)
@@ -66,7 +66,7 @@ class GwentCardImageExporter:
         exportDataButton = ttk.Button(cardDataFrame)
         exportDataButton.config(text='Export Data')
         exportDataButton.pack(side='left', padx='5', pady='5')
-        exportDataButton.configure(command= lambda: GwentCardImageExporter.updateJSON(self, gwentPathChooser.cget('path')))
+        exportDataButton.configure(command= lambda: GwentCardExporter.updateJSON(self, gwentPathChooser.cget('path')))
 
         cardDataFrame.pack(fill='x', pady='5', padx='5', side='top')
 
@@ -157,7 +157,7 @@ class GwentCardImageExporter:
         # add search box for card list
         self.detachedCards = []
         searchText = tk.StringVar()
-        searchText.trace('w', lambda name, index, mode, searchText=searchText: GwentCardImageExporter.filterCardlist(self, searchText.get()))
+        searchText.trace('w', lambda name, index, mode, searchText=searchText: GwentCardExporter.filterCardlist(self, searchText.get()))
         self.searchBox = ttk.Entry(cardSearchFrame, textvariable=searchText)
         self.searchBox.pack(side='left', expand='true', fill='x')
 
@@ -165,7 +165,7 @@ class GwentCardImageExporter:
         
         # If one is selected load the json file into the card list
         if self.numberofFiles != 0:
-            GwentCardImageExporter.loadNewJSON(self, None)
+            GwentCardExporter.loadNewJSON(self, None)
 
         cardOptionsFrame.pack(fill='x', pady='5', padx='5', side='top')
 
@@ -173,7 +173,7 @@ class GwentCardImageExporter:
         imagePathFrame = ttk.LabelFrame(mainFrame, text='4. Choose where to save', labelanchor='n')
         imagePathInfoButton = ttk.Button(imagePathFrame, text='?', width='3')
         imagePathInfoButton.pack(side='left', padx='5')
-        imagePathInfoButton.configure(command= lambda: GwentCardImageExporter.showInfo(self, "Specifiy the folder where you want to save the generated images"))
+        imagePathInfoButton.configure(command= lambda: GwentCardExporter.showInfo(self, "Specifiy the folder where you want to save the generated images"))
         imagePathChooser = PathChooserInput(imagePathFrame)
         imagePathChooser.config(type='directory')
         imagePathChooser.pack(fill='x', side='left', expand='true', pady='5')
@@ -187,7 +187,7 @@ class GwentCardImageExporter:
         generateButton = ttk.Button(mainFrame)
         generateButton.config(text='Generate')
         generateButton.pack(side='top', pady='5')
-        generateButton.configure(command= lambda: GwentCardImageExporter.generateCards(self, imagePathChooser.cget('path'), gwentPathChooser.cget('path')))
+        generateButton.configure(command= lambda: GwentCardExporter.generateCards(self, imagePathChooser.cget('path'), gwentPathChooser.cget('path')))
 
         # Set up final window
         mainFrame.config(height='690', width='400')
@@ -384,7 +384,7 @@ class GwentCardImageExporter:
                         cardStrength = self.cardData[card]['strength']
                         if cardStrength > MAX_CARD_STRENGTH:
                             cardStrength = MAX_CARD_STRENGTH
-                        strengthIcons = GwentCardImageExporter.placeNumber(self, cardStrength, "strength", strengthIcons)
+                        strengthIcons = GwentCardExporter.placeNumber(self, cardStrength, "strength", strengthIcons)
 
                         # Check if the card has armor and if so add the corresponding symbol and number
                         cardArmor = self.cardData[card]['armor']
@@ -393,7 +393,7 @@ class GwentCardImageExporter:
                         if cardArmor > 0:
                             armor = Image.open("assets/Armor.png")
                             strengthIcons = Image.alpha_composite(strengthIcons, armor)
-                            strengthIcons = GwentCardImageExporter.placeNumber(self, cardArmor, "armor", strengthIcons)
+                            strengthIcons = GwentCardExporter.placeNumber(self, cardArmor, "armor", strengthIcons)
                     
                     # If the card is a strategem add the banner icon
                     elif cardType == 'Strategem':
@@ -430,7 +430,7 @@ class GwentCardImageExporter:
                     cardProvisions = self.cardData[card]['provision']
                     if cardProvisions > MAX_CARD_PROVISIONS:
                         cardProvisions == MAX_CARD_ARMOR
-                    provisions = GwentCardImageExporter.placeNumber(self, cardProvisions, "provisions", provisions)
+                    provisions = GwentCardExporter.placeNumber(self, cardProvisions, "provisions", provisions)
 
                     # Downsize if not generating in 4K quality
                     if (quality != "uber"):
@@ -507,7 +507,7 @@ class GwentCardImageExporter:
         filenameLabel.pack(padx='10', pady='5', side='left')
         filenameEntry = ttk.Entry(entryFrame)
         filenameEntry.pack(side='left', expand='true', fill='x')
-        generateJSONbutton = ttk.Button(entryFrame, text="Generate", command= lambda: GwentCardImageExporter.generateCardData(self, filenameEntry.get(), progressBar, jsonWindow, gwentPath))
+        generateJSONbutton = ttk.Button(entryFrame, text="Generate", command= lambda: GwentCardExporter.generateCardData(self, filenameEntry.get(), progressBar, jsonWindow, gwentPath))
         generateJSONbutton.pack(side='left', padx='4')
         entryFrame.pack(side='top', padx='5', pady='5')
 
@@ -675,12 +675,12 @@ class GwentCardImageExporter:
             self.currentJSON['values'] = (*self.currentJSON['values'], filename)
             self.numberofFiles += 1
         self.currentJSON.current(len(self.currentJSON['values']) - 1)
-        GwentCardImageExporter.loadNewJSON(self, "<<ComboboxSelected>>")
+        GwentCardExporter.loadNewJSON(self, "<<ComboboxSelected>>")
         jsonWindow.destroy()
 
     def run(self):
         self.mainwindow.mainloop()
 
 if __name__ == '__main__':
-    app = GwentCardImageExporter()
+    app = GwentCardExporter()
     app.run()
