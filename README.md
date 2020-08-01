@@ -1,9 +1,9 @@
-# Gwent Card Image Exporter
+# Gwent Card Exporter
 
-Download here : https://github.com/pramberg451/gwentCardImageExporter/releases
+Download here : https://github.com/pramberg451/gwentCardExporter/releases
 
 ### Description and Features ###
-The Gwent Card Image Exporter is an application written in Python using Tkinter and the PIL. It is meant to be a simple program to export both images and card data relative to the current Gwent game instead of using third-party data or images which might take a while to be updated after a new version release. A valid Gwent installation on either Steam or GOG is required.
+The Gwent Card Exporter is an application written in Python using Tkinter and the PIL. It is meant to be a simple program to export both images and card data relative to the current Gwent game instead of using third-party data or images which might take a while to be updated after a new version release. A valid Gwent installation on either Steam or GOG is required.
 
 You can use it to...
  - Export a .json file containing Gwent card data. This can be incredibly useful to use in your own Gwent related projects. You can find all the .json files that you have extracted in the 'card_data' folder in the same directory that the .exe is.
