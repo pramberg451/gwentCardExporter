@@ -65,6 +65,24 @@ LOCALISATION_FILE_NAMES = {
     "zh-TW": "Localization/zh-tw.csv"
 }
 
+# Card sets, unreleased sets are placeholders incase this isn't updated when a new expansion releases
+# Values are the identifiers used in the original xml file
+CARD_SETS = {
+    0: "Token",
+    1: "Base",
+    2: "Tutorial",
+    3: "Thronebreaker",
+    10: "Unmillable",
+    11: "CrimsonCurse",
+    12: "Novigrad",
+    13: "IronJudgement",
+    14: "MerchantsOfOfir",
+    15: "MasterMirror",
+    16: "Unreleased1",
+    17: "Unreleased2",
+    18: "Unreleased3"
+}
+
 def save_json(filepath, data):
     print("Saved JSON to: %s" % filepath)
     with open(filepath, "w", encoding="utf-8", newline="\n") as f:

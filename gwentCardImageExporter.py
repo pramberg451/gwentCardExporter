@@ -634,6 +634,11 @@ class GwentCardImageExporter:
                 if category_id in categories_en_us:
                     card['categories'].append(categories_en_us[category_id])
 
+            # Card Set
+            setNumber = int(template.attrib.get('Availability'))
+            card['set'] = GwentUtils.CARD_SETS[setNumber]
+            # Is the card collectible
+            card['collectible'] = setNumber in {1, 3} or setNumber >= 10
 
             # Rarity
             rarity = int(template.find('Rarity').text)
