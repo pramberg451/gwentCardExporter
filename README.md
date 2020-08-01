@@ -24,7 +24,7 @@ I am using both [UnityPy](https://pypi.org/project/UnityPy/) and [texture2ddecod
 ### Building The Project ###
 You can find a standalone executable on the [releases](https://github.com/pramberg451/gwentCardImageExporter/releases) page. Just simply download the zip, extract and run. All the needed assets come with it.
 
-If for some reason you would like to run the program in your own Python environment and not as the standalone executable just make sure you have all the imports that are present in both gwentCardImageExporter.py and GwentUtils.py installed and it should work fine. I built and tested it using Python 3.8.2. Please let me know if you have any issues.
+If for some reason you would like to run the program in your own Python environment and not as the standalone executable just make sure you have all the imports that are present in both gwentCardExporter.py and GwentUtils.py installed and it should work fine. I built and tested it using Python 3.8.2. Please let me know if you have any issues.
 
 I am currently using pyinstaller to generate the standalone executable with no additions so if you would like to do that as well than that should be simple enough. 
 
