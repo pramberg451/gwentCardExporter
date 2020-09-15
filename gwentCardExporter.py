@@ -194,17 +194,17 @@ class GwentCardExporter:
         mainFrame.pack(padx='3', pady='3', side='top')
         mainwindow.geometry('450x690')
         mainwindow.resizable(False, False)
-        mainwindow.title('Gwent Card Image Exporter')
+        mainwindow.title('Gwent Card Exporter')
         mainwindow.iconbitmap('assets/favicon.ico')
         self.mainwindow = mainwindow
-    
+
     # If a selecton is made in the card list, change to generate only specific images
     def selectSpecifiedImages(self, event):
         empty = ()
         # Don't change to specific images if the selection removed the only selection
         if self.cardView.selection() != empty:
             self.allImages.set(0)
-    
+
     # Dialog box to show info for (?) buttons
     def showInfo(self, info):
         pathDialog = tk.Toplevel()
