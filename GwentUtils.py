@@ -337,7 +337,7 @@ class GwentDataHelper:
 
         for ability in root.iter('Ability'):
             if ability.attrib['Type'] == "CardAbility":
-                card_id = ability.attrib['Template']
+                card_id = ability.attrib['Id']
                 abilities[card_id] = ability
 
         return abilities
