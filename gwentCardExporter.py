@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from pygubu.widgets.pathchooserinput import PathChooserInput
-from UnityPy import AssetsManager
+import UnityPy
 import texture2ddecoder
 from PIL import Image
 import json
@@ -190,9 +190,9 @@ class GwentCardExporter:
         generateButton.configure(command= lambda: GwentCardExporter.generateCards(self, imagePathChooser.cget('path'), gwentPathChooser.cget('path')))
 
         # Set up final window
-        mainFrame.config(height='690', width='400')
+        mainFrame.config(height='790', width='400')
         mainFrame.pack(padx='3', pady='3', side='top')
-        mainwindow.geometry('450x690')
+        mainwindow.geometry('450x790')
         mainwindow.resizable(False, False)
         mainwindow.title('Gwent Card Exporter')
         mainwindow.iconbitmap('assets/favicon.ico')
@@ -344,12 +344,11 @@ class GwentCardExporter:
                 
                 # Export and crop the card art
 
-                am = AssetsManager("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/", quality, "/", self.cardData[card]['ingameArtId'], "0000"]))
-                for asset in am.assets.values():
-                    for obj in asset.objects.values():
-                        if obj.type == "Texture2D":
-                            data = obj.read()
-                            img = data.image
+                am = UnityPy.load(("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/", quality, "/", self.cardData[card]['ingameArtId'], "0000"])))
+                for obj in am.objects:
+                    if obj.type.name == "Texture2D":
+                        data = obj.read()
+                        img = data.image
                 
                 newImg = img.crop((0,0,dimensions[0],dimensions[1]))
                 

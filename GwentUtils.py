@@ -80,7 +80,10 @@ CARD_SETS = {
     15: "MasterMirror",
     16: "Unreleased1",
     17: "Unreleased2",
-    18: "Unreleased3"
+    18: "Unreleased3",
+    19: "Unreleased4",
+    20: "Unreleased5",
+    21: "Unreleased6"
 }
 
 def save_json(filepath, data):
