@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.ttk as ttk
 from pygubu.widgets.pathchooserinput import PathChooserInput
-from UnityPy import AssetsManager
+import UnityPy
 import texture2ddecoder
 from PIL import Image
 import json
@@ -317,16 +317,16 @@ class GwentCardExporter:
         progressWindow.update()
 
         # Set the dimensions of the final cards based on quality
-        dimensions = (992, 1424)
+        dimensions = (990, 1422)
         quality = "uber"
         if (self.imageQuality.get() == "High"):
-            dimensions = (497, 713)
+            dimensions = (495, 711)
             quality = "high"
         elif (self.imageQuality.get() == "Medium"):
-            dimensions = (249, 357)
+            dimensions = (247, 355)
             quality = "medium"
         elif (self.imageQuality.get() == "Low"):
-            dimensions = (125, 179)
+            dimensions = (123, 177)
             quality = "low"
 
         for card in cardsToGenerate:
@@ -339,23 +339,21 @@ class GwentCardExporter:
                 # If the image is low quality, then export and crop it as a medium instead
                 # because the low resolution card arts are stored differently in the game files the higher qualities
                 if self.imageQuality.get() == "Low":
-                    dimensions = (249, 357)
+                    dimensions = (247, 355)
                     quality = "medium"
                 
                 # Export and crop the card art
-
-                am = AssetsManager("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/", quality, "/", self.cardData[card]['ingameArtId'], "0000"]))
-                for asset in am.assets.values():
-                    for obj in asset.objects.values():
-                        if obj.type == "Texture2D":
-                            data = obj.read()
-                            img = data.image
+                am = UnityPy.load(("".join([gwentPath, "/Gwent_Data/StreamingAssets/bundledassets/cardassets/textures/standard/", quality, "/", self.cardData[card]['ingameArtId'], "0000"])))
+                for obj in am.objects:
+                    if obj.type.name == "Texture2D":
+                        data = obj.read()
+                        img = data.image
                 
                 newImg = img.crop((0,0,dimensions[0],dimensions[1]))
                 
                 # Reset the quality specifics back to low if it is low and was exported as a medium
                 if self.imageQuality.get() == "Low":
-                    dimensions = (125, 179)
+                    dimensions = (123, 177)
                     quality = "low"
                     newImg = newImg.resize(dimensions)
 
